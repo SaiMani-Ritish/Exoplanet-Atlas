@@ -1,0 +1,744 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  #atlas-root {
+    background: #020409;
+    min-height: 100vh;
+    font-family: 'Outfit', sans-serif;
+    color: #e0e8f0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #starfield {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .header {
+    position: relative;
+    z-index: 10;
+    padding: 28px 28px 12px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .title-block h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #c8ddf7;
+    text-transform: uppercase;
+  }
+
+  .title-block p {
+    font-size: 12px;
+    color: #5a7090;
+    margin-top: 3px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .stats-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #7bbfff;
+  }
+
+  .stat-lbl {
+    font-size: 10px;
+    color: #405570;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 1px;
+  }
+
+  .controls {
+    position: relative;
+    z-index: 10;
+    padding: 12px 28px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .filter-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #8aaac8;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    cursor: pointer;
+    transition: all 0.18s;
+    letter-spacing: 0.04em;
+  }
+
+  .filter-btn:hover { background: rgba(120,180,255,0.1); color: #c0d8f0; border-color: rgba(120,180,255,0.3); }
+  .filter-btn.active { background: rgba(100,160,255,0.18); color: #a8d0ff; border-color: rgba(100,160,255,0.5); }
+
+  .search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 4px 14px;
+    margin-left: auto;
+  }
+
+  .search-wrap input {
+    background: none;
+    border: none;
+    outline: none;
+    color: #c0d8f0;
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    width: 140px;
+    caret-color: #7bbfff;
+  }
+
+  .search-wrap input::placeholder { color: #3a5570; }
+
+  #canvas-wrap {
+    position: relative;
+    z-index: 5;
+    padding: 16px 20px 80px;
+    min-height: 600px;
+  }
+
+  #planet-canvas {
+    display: block;
+    width: 100%;
+  }
+
+  .tooltip {
+    position: fixed;
+    pointer-events: none;
+    z-index: 100;
+    background: rgba(5, 12, 24, 0.95);
+    border: 1px solid rgba(100,160,255,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    max-width: 240px;
+    backdrop-filter: blur(8px);
+    transition: opacity 0.12s;
+    opacity: 0;
+  }
+
+  .tooltip.visible { opacity: 1; }
+
+  .tt-name {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #a8d0ff;
+    margin-bottom: 8px;
+  }
+
+  .tt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 11px;
+    color: #6a8aa8;
+    margin: 3px 0;
+  }
+
+  .tt-row span:last-child { color: #c0d4e8; font-family: 'Space Mono', monospace; }
+
+  .tt-type {
+    display: inline-block;
+    margin-top: 7px;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .legend {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    gap: 0;
+    align-items: center;
+    background: rgba(5,12,24,0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 30px;
+    padding: 6px 16px;
+    backdrop-filter: blur(12px);
+  }
+
+  .legend-gradient {
+    width: 180px;
+    height: 10px;
+    border-radius: 5px;
+    margin: 0 10px;
+  }
+
+  .legend-label {
+    font-size: 9px;
+    font-family: 'Space Mono', monospace;
+    color: #4a6888;
+    letter-spacing: 0.04em;
+  }
+
+  .size-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .size-dot {
+    border-radius: 50%;
+    background: rgba(120,180,255,0.4);
+    border: 1px solid rgba(120,180,255,0.6);
+    flex-shrink: 0;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2,4,9,0.95);
+    z-index: 50;
+  }
+
+  .loading-ring {
+    width: 48px;
+    height: 48px;
+    border: 2px solid rgba(100,160,255,0.15);
+    border-top-color: #5aa0f0;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: #3a5a80;
+    letter-spacing: 0.08em;
+  }
+
+  .error-msg {
+    text-align: center;
+    padding: 40px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: #5a7090;
+  }
+
+  .hue-bar {
+    height: 3px;
+    width: 100%;
+    position: relative;
+    z-index: 10;
+    background: linear-gradient(to right,
+      hsl(200,80%,55%), hsl(210,85%,55%), hsl(220,80%,55%),
+      hsl(170,75%,50%), hsl(150,70%,50%), hsl(120,65%,50%),
+      hsl(60,80%,55%), hsl(30,85%,55%), hsl(15,85%,55%),
+      hsl(0,80%,55%)
+    );
+    opacity: 0.5;
+  }
+</style>
+
+<div id="atlas-root">
+  <canvas id="starfield"></canvas>
+
+  <div class="header">
+    <div class="title-block">
+      <h1>Exoplanet Atlas</h1>
+      <p id="subtitle">NASA Exoplanet Archive · Arranged by atmospheric hue</p>
+    </div>
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-num" id="count-confirmed">—</div><div class="stat-lbl">Confirmed</div></div>
+      <div class="stat"><div class="stat-num" id="count-shown">—</div><div class="stat-lbl">Shown</div></div>
+      <div class="stat"><div class="stat-num" id="count-methods">—</div><div class="stat-lbl">Methods</div></div>
+    </div>
+  </div>
+
+  <div class="hue-bar"></div>
+
+  <div class="controls">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="Transit">Transit</button>
+    <button class="filter-btn" data-filter="Radial Velocity">Radial Velocity</button>
+    <button class="filter-btn" data-filter="Imaging">Direct Imaging</button>
+    <button class="filter-btn" data-filter="Microlensing">Microlensing</button>
+    <button class="filter-btn" data-filter="Astrometry">Astrometry</button>
+    <div class="search-wrap">
+      <i class="ti ti-search" style="font-size:14px;color:#3a5570;" aria-hidden="true"></i>
+      <input type="text" id="search-input" placeholder="Search planet..." />
+    </div>
+  </div>
+
+  <div id="canvas-wrap">
+    <div class="loading-overlay" id="loading">
+      <div class="loading-ring"></div>
+      <div class="loading-text" id="loading-text">CONNECTING TO NASA ARCHIVE...</div>
+    </div>
+    <canvas id="planet-canvas"></canvas>
+  </div>
+
+  <div class="tooltip" id="tooltip">
+    <div class="tt-name" id="tt-name"></div>
+    <div class="tt-row"><span>Host star</span><span id="tt-host"></span></div>
+    <div class="tt-row"><span>Radius</span><span id="tt-radius"></span></div>
+    <div class="tt-row"><span>Mass</span><span id="tt-mass"></span></div>
+    <div class="tt-row"><span>Orbital period</span><span id="tt-period"></span></div>
+    <div class="tt-row"><span>Distance</span><span id="tt-dist"></span></div>
+    <div class="tt-row"><span>Discovery</span><span id="tt-year"></span></div>
+    <div><span class="tt-type" id="tt-type"></span></div>
+  </div>
+
+  <div class="legend">
+    <span class="legend-label">ICE/WATER</span>
+    <div class="legend-gradient" id="legend-grad"></div>
+    <span class="legend-label">HOT LAVA</span>
+    <div class="size-legend">
+      <div class="size-dot" style="width:6px;height:6px;"></div>
+      <span class="legend-label">SMALL</span>
+      <div class="size-dot" style="width:12px;height:12px;"></div>
+      <span class="legend-label">MEDIUM</span>
+      <div class="size-dot" style="width:22px;height:22px;"></div>
+      <span class="legend-label">GIANT</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+pl_name,hostname,disc_year,discoverymethod,pl_rade,pl_bmasse,pl_orbper,sy_dist,st_teff,pl_eqt+from+pscomppars+where+default_flag=1+and+pl_name+is+not+null&format=json';
+
+let allPlanets = [];
+let visiblePlanets = [];
+let currentFilter = 'all';
+let searchTerm = '';
+let planetPositions = [];
+let animFrame;
+let hoveredIdx = -1;
+const DPR = window.devicePixelRatio || 1;
+
+const canvas = document.getElementById('planet-canvas');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+const loadingEl = document.getElementById('loading');
+const loadingText = document.getElementById('loading-text');
+
+function initStarfield() {
+  const sc = document.getElementById('starfield');
+  const sctx = sc.getContext('2d');
+  sc.width = window.innerWidth * DPR;
+  sc.height = window.innerHeight * DPR;
+  sc.style.width = window.innerWidth + 'px';
+  sc.style.height = window.innerHeight + 'px';
+  const stars = [];
+  for (let i = 0; i < 300; i++) {
+    stars.push({
+      x: Math.random() * sc.width,
+      y: Math.random() * sc.height,
+      r: Math.random() * 1.2 * DPR,
+      a: Math.random() * 0.7 + 0.1,
+      blink: Math.random() * Math.PI * 2
+    });
+  }
+  function drawStars(t) {
+    sctx.clearRect(0, 0, sc.width, sc.height);
+    stars.forEach(s => {
+      const a = s.a * (0.6 + 0.4 * Math.sin(s.blink + t * 0.0008));
+      sctx.beginPath();
+      sctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      sctx.fillStyle = `rgba(200,220,255,${a})`;
+      sctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+  requestAnimationFrame(drawStars);
+}
+
+function getHue(planet) {
+  const T = planet.pl_eqt || planet.st_teff * 0.3;
+  if (!T || isNaN(T)) {
+    const r = planet.pl_rade;
+    if (!r || isNaN(r)) return 200 + Math.random() * 30;
+    if (r < 1.5) return 180 + Math.random() * 40;
+    if (r < 4) return 200 + Math.random() * 30;
+    return 220 + Math.random() * 20;
+  }
+  if (T < 250) return 200 + (250 - T) * 0.1;
+  if (T < 400) return 190 - (T - 250) * 0.3;
+  if (T < 700) return 150 - (T - 400) * 0.15;
+  if (T < 1000) return 100 - (T - 700) * 0.05;
+  if (T < 1500) return 60 - (T - 1000) * 0.06;
+  if (T < 2000) return 30 - (T - 1500) * 0.03;
+  return Math.max(0, 15 - (T - 2000) * 0.005);
+}
+
+function getSaturation(planet) {
+  const r = planet.pl_rade;
+  if (!r || isNaN(r)) return 60;
+  if (r < 1.2) return 50;
+  if (r < 4) return 75;
+  return 85;
+}
+
+function getLightness(planet) {
+  const r = planet.pl_rade;
+  if (!r || isNaN(r)) return 55;
+  if (r < 1.2) return 65;
+  if (r < 4) return 58;
+  if (r < 10) return 50;
+  return 45;
+}
+
+function getRadius(planet) {
+  const r = planet.pl_rade;
+  if (!r || isNaN(r)) return 5;
+  const logR = Math.log(r + 1);
+  return Math.max(3, Math.min(28, logR * 8 + 2));
+}
+
+function planetType(planet) {
+  const r = planet.pl_rade;
+  const m = planet.pl_bmasse;
+  if (!r && !m) return { label: 'Unknown', color: '#445566' };
+  if (r && r < 1.5) return { label: 'Rocky / Earth-like', color: '#8B6B4A' };
+  if (r && r < 2.5) return { label: 'Super-Earth', color: '#5A7A4A' };
+  if (r && r < 4) return { label: 'Sub-Neptune', color: '#3A6090' };
+  if (r && r < 10) return { label: 'Neptune-class', color: '#2A5888' };
+  if (m && m > 300) return { label: 'Gas Giant', color: '#6B4A3A' };
+  return { label: 'Gas Giant', color: '#6B4A3A' };
+}
+
+function drawPlanetGlobe(ctx, x, y, r, hue, sat, lit, hasRing) {
+  const grad = ctx.createRadialGradient(x - r*0.3, y - r*0.3, r*0.05, x, y, r);
+  const h = ((hue % 360) + 360) % 360;
+  grad.addColorStop(0, `hsl(${h},${sat+15}%,${lit+20}%)`);
+  grad.addColorStop(0.4, `hsl(${h},${sat}%,${lit}%)`);
+  grad.addColorStop(0.75, `hsl(${h},${sat+5}%,${lit-12}%)`);
+  grad.addColorStop(1, `hsl(${h},${sat-10}%,${lit-25}%)`);
+
+  if (hasRing && r > 10) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1, 0.3);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.7, 0, Math.PI * 2);
+    ctx.strokeStyle = `hsla(${h},${sat}%,${lit+10}%,0.35)`;
+    ctx.lineWidth = r * 0.45;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  const bandCount = Math.floor(r / 4);
+  for (let b = 0; b < bandCount; b++) {
+    const by = y - r * 0.7 + (b / bandCount) * r * 1.4;
+    const halfW = Math.sqrt(Math.max(0, r*r - (by-y)*(by-y)));
+    if (halfW < 2) continue;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x - halfW, by - 1.5, halfW * 2, 3);
+    ctx.clip();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    const bAlt = b % 2 === 0;
+    ctx.fillStyle = `hsla(${h+5},${sat}%,${bAlt ? lit-8 : lit+5}%,0.18)`;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  const gloss = ctx.createRadialGradient(x - r*0.35, y - r*0.35, 0, x - r*0.35, y - r*0.35, r * 0.7);
+  gloss.addColorStop(0, 'rgba(255,255,255,0.22)');
+  gloss.addColorStop(0.5, 'rgba(255,255,255,0.05)');
+  gloss.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = gloss;
+  ctx.fill();
+}
+
+function layoutPlanets(planets) {
+  const W = canvas.width / DPR;
+  const positions = [];
+  const sorted = [...planets].sort((a, b) => (a._hue || 0) - (b._hue || 0));
+
+  let x = 0, y = 0;
+  let rowH = 0;
+  const padding = 4;
+
+  for (const p of sorted) {
+    const r = p._radius;
+    const d = r * 2 + padding * 2;
+    if (x + d > W && x > 0) {
+      x = 0;
+      y += rowH + padding;
+      rowH = 0;
+    }
+    positions.push({ planet: p, cx: x + r + padding, cy: y + r + padding, r });
+    if (d > rowH) rowH = d;
+    x += d;
+  }
+  return { positions, totalH: y + rowH + padding + 40 };
+}
+
+function resizeCanvas(totalH) {
+  const W = document.getElementById('canvas-wrap').clientWidth - 40;
+  canvas.width = W * DPR;
+  canvas.height = totalH * DPR;
+  canvas.style.width = W + 'px';
+  canvas.style.height = totalH + 'px';
+  ctx.scale(DPR, DPR);
+}
+
+function render() {
+  const W = canvas.width / DPR;
+  const H = canvas.height / DPR;
+  ctx.clearRect(0, 0, W, H);
+
+  for (let i = 0; i < planetPositions.length; i++) {
+    const { planet, cx, cy, r } = planetPositions[i];
+    const hue = planet._hue;
+    const sat = planet._sat;
+    const lit = planet._lit;
+    const isHovered = i === hoveredIdx;
+    const isSearchHit = searchTerm && planet.pl_name.toLowerCase().includes(searchTerm);
+
+    if (searchTerm && !isSearchHit) {
+      ctx.globalAlpha = 0.15;
+    } else {
+      ctx.globalAlpha = 1;
+    }
+
+    if (isHovered) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(${hue},80%,75%,0.6)`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    const hasRing = planet._radius > 12 && (planet.pl_rade > 8 || !planet.pl_rade);
+    drawPlanetGlobe(ctx, cx, cy, r, hue, sat, lit, hasRing);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function hitTest(mx, my) {
+  for (let i = 0; i < planetPositions.length; i++) {
+    const { cx, cy, r } = planetPositions[i];
+    const dx = mx - cx, dy = my - cy;
+    if (dx*dx + dy*dy <= (r+3)*(r+3)) return i;
+  }
+  return -1;
+}
+
+function showTooltip(idx, mouseX, mouseY) {
+  const p = planetPositions[idx].planet;
+  const type = planetType(p);
+  document.getElementById('tt-name').textContent = p.pl_name;
+  document.getElementById('tt-host').textContent = p.hostname || '—';
+  document.getElementById('tt-radius').textContent = p.pl_rade ? p.pl_rade.toFixed(2) + ' R⊕' : '—';
+  document.getElementById('tt-mass').textContent = p.pl_bmasse ? p.pl_bmasse.toFixed(2) + ' M⊕' : '—';
+  document.getElementById('tt-period').textContent = p.pl_orbper ? p.pl_orbper.toFixed(2) + ' days' : '—';
+  document.getElementById('tt-dist').textContent = p.sy_dist ? p.sy_dist.toFixed(1) + ' pc' : '—';
+  document.getElementById('tt-year').textContent = p.disc_year || '—';
+  const ttType = document.getElementById('tt-type');
+  ttType.textContent = type.label;
+  ttType.style.background = type.color + '33';
+  ttType.style.color = type.color;
+  ttType.style.border = '1px solid ' + type.color + '66';
+
+  const tw = 240, th = 180;
+  let lx = mouseX + 16, ly = mouseY - 20;
+  if (lx + tw > window.innerWidth) lx = mouseX - tw - 16;
+  if (ly + th > window.innerHeight) ly = mouseY - th - 10;
+  tooltip.style.left = lx + 'px';
+  tooltip.style.top = ly + 'px';
+  tooltip.classList.add('visible');
+}
+
+function hideTooltip() {
+  tooltip.classList.remove('visible');
+}
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const idx = hitTest(mx, my);
+  if (idx !== hoveredIdx) {
+    hoveredIdx = idx;
+    render();
+  }
+  if (idx >= 0) {
+    canvas.style.cursor = 'crosshair';
+    showTooltip(idx, e.clientX, e.clientY);
+  } else {
+    canvas.style.cursor = 'default';
+    hideTooltip();
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hoveredIdx = -1;
+  hideTooltip();
+  render();
+});
+
+function applyFilters() {
+  visiblePlanets = allPlanets.filter(p => {
+    if (currentFilter !== 'all' && p.discoverymethod !== currentFilter) return false;
+    return true;
+  });
+  searchTerm = document.getElementById('search-input').value.trim().toLowerCase();
+  document.getElementById('count-shown').textContent = visiblePlanets.length.toLocaleString();
+  rebuildLayout();
+}
+
+function rebuildLayout() {
+  const { positions, totalH } = layoutPlanets(visiblePlanets);
+  resizeCanvas(totalH);
+  planetPositions = positions;
+  render();
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    applyFilters();
+  });
+});
+
+document.getElementById('search-input').addEventListener('input', applyFilters);
+
+function buildLegendGradient() {
+  const lg = document.getElementById('legend-grad');
+  lg.style.background = 'linear-gradient(to right, hsl(220,80%,55%), hsl(190,78%,52%), hsl(160,72%,50%), hsl(120,65%,50%), hsl(60,80%,55%), hsl(30,85%,55%), hsl(10,85%,55%), hsl(0,80%,52%))';
+}
+
+async function loadData() {
+  loadingText.textContent = 'CONNECTING TO NASA ARCHIVE...';
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error('Fetch failed');
+    loadingText.textContent = 'PARSING 6000+ WORLDS...';
+    const data = await res.json();
+
+    allPlanets = data.map(p => {
+      const hue = getHue(p);
+      const sat = getSaturation(p);
+      const lit = getLightness(p);
+      const radius = getRadius(p);
+      return { ...p, _hue: hue, _sat: sat, _lit: lit, _radius: radius };
+    });
+
+    const methods = new Set(allPlanets.map(p => p.discoverymethod).filter(Boolean));
+    document.getElementById('count-confirmed').textContent = allPlanets.length.toLocaleString();
+    document.getElementById('count-methods').textContent = methods.size;
+
+    visiblePlanets = allPlanets;
+    document.getElementById('count-shown').textContent = visiblePlanets.length.toLocaleString();
+
+    loadingEl.style.display = 'none';
+    buildLegendGradient();
+    rebuildLayout();
+
+  } catch (err) {
+    loadingEl.innerHTML = `<div class="error-msg">
+      <p style="color:#5a8aaa;margin-bottom:8px;">FAILED TO REACH NASA ARCHIVE</p>
+      <p style="color:#334455;font-size:11px;">The API may be temporarily unavailable.<br>Loading demo dataset...</p>
+    </div>`;
+    loadFallbackData();
+  }
+}
+
+function loadFallbackData() {
+  const methods = ['Transit','Radial Velocity','Imaging','Microlensing','Astrometry','Transit Timing Variations'];
+  const names = ['Kepler','TRAPPIST','HD','GJ','TOI','K2','WASP','HAT','CoRoT','55 Cnc','51 Peg','tau Boo','ups And'];
+  const demo = [];
+  for (let i = 0; i < 800; i++) {
+    const eqt = 50 + Math.random() * 3000;
+    const rade = Math.exp(Math.random() * 3.5) * 0.5;
+    const bmasse = Math.exp(Math.random() * 5);
+    const prefix = names[Math.floor(Math.random() * names.length)];
+    const pl = {
+      pl_name: `${prefix}-${Math.floor(Math.random()*9000)+100} ${String.fromCharCode(98+Math.floor(Math.random()*5))}`,
+      hostname: `${prefix}-${Math.floor(Math.random()*9000)+100}`,
+      disc_year: 1990 + Math.floor(Math.random() * 35),
+      discoverymethod: methods[Math.floor(Math.random() * methods.length)],
+      pl_rade: rade,
+      pl_bmasse: bmasse,
+      pl_orbper: Math.exp(Math.random() * 6),
+      sy_dist: Math.random() * 3000,
+      st_teff: 3000 + Math.random() * 7000,
+      pl_eqt: eqt
+    };
+    const hue = getHue(pl);
+    pl._hue = hue;
+    pl._sat = getSaturation(pl);
+    pl._lit = getLightness(pl);
+    pl._radius = getRadius(pl);
+    demo.push(pl);
+  }
+  allPlanets = demo;
+  visiblePlanets = demo;
+  const methods2 = new Set(demo.map(p => p.discoverymethod));
+  document.getElementById('count-confirmed').textContent = '~6,286';
+  document.getElementById('count-shown').textContent = demo.length.toLocaleString();
+  document.getElementById('count-methods').textContent = methods2.size;
+  document.getElementById('subtitle').textContent = 'Demo dataset (NASA API offline) · Arranged by atmospheric hue';
+  loadingEl.style.display = 'none';
+  buildLegendGradient();
+  rebuildLayout();
+}
+
+initStarfield();
+loadData();
+</script>
