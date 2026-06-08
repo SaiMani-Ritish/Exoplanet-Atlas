@@ -132,27 +132,6 @@ exoplanet_atlas_hue_universe.html
 
 in a modern browser.
 
-### Option 2: Serve Locally
-
-```bash
-python -m http.server 8000
-```
-
-Then navigate to:
-
-```text
-http://localhost:8000
-```
-
-## Browser Support
-
-Recommended browsers:
-
-* Google Chrome
-* Microsoft Edge
-* Firefox
-* Safari
-
 Requires support for:
 
 * ES6 JavaScript
